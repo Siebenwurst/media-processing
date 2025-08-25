@@ -19,14 +19,14 @@ let package = Package(
                 .product(name: "_NIOFileSystem", package: "swift-nio"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "Subprocess", package: "swift-subprocess"),
-                "_LZ77", "_Hashing", "_NumericsShims"
+                "_LZ77", "_Hashing", "_MediaProcessingShims"
             ],
             swiftSettings: [.strictMemorySafety()]
         ),
         .target(name: "_LZ77", dependencies: ["_Hashing"], path: "Sources/LZ77", swiftSettings: [.strictMemorySafety()]),
         .target(name: "_Hashing", path: "Sources/Hashing", swiftSettings: [.strictMemorySafety()]),
 
-        .target(name: "_NumericsShims"),
+        .target(name: "_MediaProcessingShims"),
 
         .testTarget(name: "MediaProcessingTests", dependencies: ["MediaProcessing"]),
     ]

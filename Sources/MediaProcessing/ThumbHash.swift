@@ -1,4 +1,4 @@
-import _NumericsShims
+import _MediaProcessingShims
 
 func rgbaToThumbHash(width: Int, height: Int, rgba: [UInt8]) -> [UInt8] {
     assert(width <= 100 && height <= 100, "Encoding an image larger than 100x100 is slow with no benefit")
