@@ -16,17 +16,16 @@ public struct ImageProcessor: Sendable {
         self.executablePath = executablePath
     }
 
-    public func compressImage(inputFile: String, size: Int, format: String? = nil) async throws -> (FilePath, width: Int, height: Int) {
-        var fileParts = inputFile.split(separator: "/")
-        let fileNameIndex = fileParts.endIndex.advanced(by: -1)
-        fileParts[fileNameIndex] = "tn_\(fileParts[fileNameIndex])"
-        var filePath = "/" + fileParts.joined(separator: "/")
-        fileParts[fileNameIndex] = "tn_%s.\(fileParts[fileNameIndex].split(separator: ".").last ?? "jpeg")"
-        var filePathWildcard = "/" + fileParts.joined(separator: "/")
-        if let format {
-            filePath += ".\(format)"
-            filePathWildcard += ".\(format)"
+    public func compressImage(inputFile: _FilePath, size: Int, format: String? = nil) async throws -> (FilePath, width: Int, height: Int) {
+        let filename = inputFile.lastComponent ?? "img.jpeg"
+        let fileParts = inputFile.removingLastComponent()
+        let filePath = if let format {
+            fileParts.appending("tn_\(filename).\(format)")
+        } else {
+            fileParts.appending("tn_\(filename)")
         }
+
+        let filePathWildcard = filePath.appending("tn_%s.\(format ?? filename.extension ?? "jpeg")")
 
         let thumbnailExecutable: Executable
         if let executablePath {
@@ -34,7 +33,7 @@ public struct ImageProcessor: Sendable {
         } else {
             thumbnailExecutable = .name("vipsthumbnail")
         }
-        let thumbnailExecutionResult = try await run(thumbnailExecutable, arguments: ["-s", "\(size)", "--no-rotate", inputFile, "-o", filePathWildcard]) { _ in }
+        let thumbnailExecutionResult = try await run(thumbnailExecutable, arguments: ["-s", "\(size)", "--no-rotate", inputFile.string, "-o", filePathWildcard.string]) { _ in }
         switch thumbnailExecutionResult.terminationStatus {
         case .exited(0):
             break
@@ -48,7 +47,7 @@ public struct ImageProcessor: Sendable {
         } else {
             headersExecutable = .name("vipsheader")
         }
-        let headersExecutionResult = try await run(headersExecutable, arguments: ["-a", filePath]) { (execution: Execution, standardOutput: AsyncBufferSequence) -> (Int?, Int?) in
+        let headersExecutionResult = try await run(headersExecutable, arguments: ["-a", filePath.string]) { (execution: Execution, standardOutput: AsyncBufferSequence) -> (Int?, Int?) in
             var width: Int?
             var height: Int?
             for try await line in standardOutput.lines(encoding: UTF8.self) {
@@ -72,7 +71,7 @@ public struct ImageProcessor: Sendable {
             (width, height) = (0, 0)
         }
 
-        return (.init(filePath), width, height)
+        return (.init(filePath.string), width, height)
     }
 
     public enum ThumbHashFormat {
@@ -85,7 +84,7 @@ public struct ImageProcessor: Sendable {
         case hex([String])
         case base64(String)
     }
-    public func thumbHash(for image: String, format: ThumbHashFormat = .raw) async throws -> ThumbHashResult {
+    public func thumbHash(for image: _FilePath, format: ThumbHashFormat = .raw) async throws -> ThumbHashResult {
         let (filePath, width, height) = try await compressImage(inputFile: image, size: 100, format: "png")
         let raw = try await fileSystem.withFileHandle(forReadingAt: filePath) { read in
             let sequence = read.readChunks(chunkLength: .bytes(1))

@@ -17,8 +17,8 @@ public enum CompressionLevel: String {
     case `default` = "/default"
 }
 public func compressPDF(
-    inputFile: String,
-    outputFile: String,
+    inputFile: _FilePath,
+    outputFile: _FilePath,
     compressionLevel: CompressionLevel = .default,
     executablePath: _FilePath? = nil
 ) async throws {
@@ -35,7 +35,7 @@ public func compressPDF(
         "-dAutoRotatePages=/None", "-dColorImageDownsampleType=/Bicubic",
         "-dGrayImageDownsampleType=/Bicubic", "-dMonoImageDownsampleType=/Subsample",
         "-dGrayImageResolution=72", "-dColorImageResolution=72", "-dMonoImageResolution=72",
-        "-sOutputFile=\(outputFile)", inputFile
+        "-sOutputFile=\(outputFile)", inputFile.string
     ]) { _ in }
     switch result.terminationStatus {
     case .exited(.zero):
