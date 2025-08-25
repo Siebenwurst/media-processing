@@ -1,26 +1,33 @@
 // swift-tools-version: 6.2
-// The swift-tools-version declares the minimum version of Swift required to build this package.
-
 import PackageDescription
 
 let package = Package(
     name: "media-processing",
+    platforms: [.macOS(.v13)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "media-processing",
-            targets: ["media-processing"]
-        ),
+        .library(name: "MediaProcessing", targets: ["MediaProcessing"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.86.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
+        .package(url: "https://github.com/swiftlang/swift-subprocess.git", branch: "main"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "media-processing"
+            name: "MediaProcessing",
+            dependencies: [
+                .product(name: "_NIOFileSystem", package: "swift-nio"),
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "Subprocess", package: "swift-subprocess"),
+                "_LZ77", "_Hashing", "_NumericsShims"
+            ],
+            swiftSettings: [.strictMemorySafety()]
         ),
-        .testTarget(
-            name: "media-processingTests",
-            dependencies: ["media-processing"]
-        ),
+        .target(name: "_LZ77", dependencies: ["_Hashing"], path: "Sources/LZ77", swiftSettings: [.strictMemorySafety()]),
+        .target(name: "_Hashing", path: "Sources/Hashing", swiftSettings: [.strictMemorySafety()]),
+
+        .target(name: "_NumericsShims"),
+
+        .testTarget(name: "MediaProcessingTests", dependencies: ["MediaProcessing"]),
     ]
 )
