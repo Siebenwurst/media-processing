@@ -17,15 +17,7 @@ public struct ImageProcessor: Sendable {
     }
 
     public func compressImage(inputFile: _FilePath, size: Int, format: String? = nil) async throws -> (FilePath, width: Int, height: Int) {
-        let filename = inputFile.lastComponent ?? "img.jpeg"
-        let fileParts = inputFile.removingLastComponent()
-        let filePath = if let format {
-            fileParts.appending("tn_\(filename).\(format)")
-        } else {
-            fileParts.appending("tn_\(filename)")
-        }
-
-        let filePathWildcard = filePath.appending("tn_%s.\(format ?? filename.extension ?? "jpeg")")
+        let (filePath, filePathWildcard) = makePaths(for: inputFile, format: format)
 
         let thumbnailExecutable: Executable
         if let executablePath {
@@ -115,6 +107,20 @@ public struct ImageProcessor: Sendable {
         case .base64:
             return .base64(String(_base64Encoding: hash))
         }
+    }
+
+
+    func makePaths(for file: _FilePath, format: String?) -> (filePath: _FilePath, filePathWildcard: _FilePath) {
+        let filename = file.lastComponent ?? "img.jpeg"
+        let fileParts = file.removingLastComponent()
+        let filePath = if let format {
+            fileParts.appending("tn_\(filename).\(format)")
+        } else {
+            fileParts.appending("tn_\(filename)")
+        }
+
+        let filePathWildcard = fileParts.appending("tn_%s.\(format ?? filename.extension ?? "jpeg")")
+        return (filePath, filePathWildcard)
     }
 }
 
