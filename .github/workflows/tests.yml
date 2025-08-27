@@ -15,8 +15,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install zstd
       run: |
-        apt-get update -y
-        apt-get install -y zstd
+        sudo apt-get update -y
+        sudo apt-get install -y zstd
     - name: Restore .build
       id: "restore-build"
       uses: actions/cache/restore@v4
