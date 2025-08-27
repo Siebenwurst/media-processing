@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.1
 import PackageDescription
 
 let package = Package(
@@ -21,10 +21,9 @@ let package = Package(
                 .product(name: "Subprocess", package: "swift-subprocess"),
                 "_LZ77", "_Hashing", "_MediaProcessingShims"
             ],
-            swiftSettings: [.strictMemorySafety()]
         ),
-        .target(name: "_LZ77", dependencies: ["_Hashing"], path: "Sources/LZ77", swiftSettings: [.strictMemorySafety()]),
-        .target(name: "_Hashing", path: "Sources/Hashing", swiftSettings: [.strictMemorySafety()]),
+        .target(name: "_LZ77", dependencies: ["_Hashing"], path: "Sources/LZ77"),
+        .target(name: "_Hashing", path: "Sources/Hashing"),
 
         .target(name: "_MediaProcessingShims"),
 

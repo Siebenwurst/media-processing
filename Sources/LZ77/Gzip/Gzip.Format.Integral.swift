@@ -22,7 +22,7 @@ extension Gzip.Format.Integral: LZ77.StreamIntegral {
 
     @inlinable
     mutating func update(from buffer: UnsafePointer<UInt8>, count: Int) {
-        unsafe self.crc32.update(with: UnsafeBufferPointer(start: buffer, count: count))
+        self.crc32.update(with: UnsafeBufferPointer(start: buffer, count: count))
         self.bytes += UInt32.init(count)
     }
 }

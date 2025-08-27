@@ -24,14 +24,14 @@ extension LZ77.MRC32: LZ77.StreamIntegral {
         let (q, r): (Int, Int) = count.quotientAndRemainder(dividingBy: 5552)
         for i: Int in 0 ..< q {
             for j: Int in 5552 * i ..< 5552 * (i + 1) {
-                unsafe self.single &+= .init(start[j])
+                self.single &+= .init(start[j])
                 self.double &+= self.single
             }
             self.single %= 65521
             self.double %= 65521
         }
         for j: Int in 5552 * q ..< 5552 * q + r {
-            unsafe self.single &+= .init(start[j])
+            self.single &+= .init(start[j])
             self.double &+= self.single
         }
 

@@ -36,15 +36,15 @@ extension LZ77.InflatorOut {
                 """)
             #endif
 
-            self.storage = unsafe self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt8>) in
+            self.storage = self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt8>) in
 
                 let new: ManagedBuffer<Void, UInt8> = .create(minimumCapacity: self.capacity) {
                     self.capacity = $0.capacity
                     return ()
                 }
-                unsafe new.withUnsafeMutablePointerToElements {
+                new.withUnsafeMutablePointerToElements {
                     // cannot do shift here, since the checksum has to be updated
-                    unsafe $0.update(from: body, count: self.endIndex)
+                    $0.update(from: body, count: self.endIndex)
                 }
                 return new
             }
@@ -52,51 +52,51 @@ extension LZ77.InflatorOut {
     }
 
     mutating func release(bytes count: Int) -> [UInt8]? {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
+        self.storage.withUnsafeMutablePointerToElements {
             guard self.endIndex >= self.currentIndex + count else {
                 return nil
             }
 
-            let slice: UnsafeBufferPointer<UInt8> = unsafe .init(start: $0 + self.currentIndex, count: count)
+            let slice: UnsafeBufferPointer<UInt8> = .init(start: $0 + self.currentIndex, count: count)
             defer {
                 let limit: Int = Swift.max(self.endIndex - self.window, self.startIndex)
                 self.currentIndex += count
                 self.startIndex = Swift.min(self.currentIndex, limit)
             }
-            return unsafe .init(slice)
+            return .init(slice)
         }
     }
 
     // releases everything
     mutating func release() -> [UInt8] {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
+        self.storage.withUnsafeMutablePointerToElements {
             let count: Int = self.endIndex - self.currentIndex
-            let slice: UnsafeBufferPointer<UInt8> = unsafe .init(start: $0 + self.currentIndex, count: count)
+            let slice: UnsafeBufferPointer<UInt8> = .init(start: $0 + self.currentIndex, count: count)
             defer {
                 self.currentIndex = self.endIndex
                 self.startIndex = Swift.max(self.endIndex - self.window, self.startIndex)
             }
-            return unsafe .init(slice)
+            return .init(slice)
         }
     }
 
     mutating func append(_ value: UInt8) {
         self.reserve(1)
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe $0[self.endIndex] = value
+        self.storage.withUnsafeMutablePointerToElements {
+            $0[self.endIndex] = value
         }
         self.endIndex &+= 1
     }
 
     mutating func expand(offset: Int, count: Int) {
         self.reserve(count)
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            let start: UnsafeMutablePointer<UInt8> = unsafe $0 + self.endIndex
+        self.storage.withUnsafeMutablePointerToElements {
+            let start: UnsafeMutablePointer<UInt8> = $0 + self.endIndex
             // cannot use update(from:count:) because the standard library implementation
             // copies from the back to the front if the ranges overlap
             // https://github.com/apple/swift/blob/master/stdlib/public/core/UnsafePointer.swift#L745
-            for unsafe current: UnsafeMutablePointer<UInt8> in unsafe start ..< start + count {
-                unsafe current.pointee = unsafe (current - offset).pointee
+            for current: UnsafeMutablePointer<UInt8> in start ..< start + count {
+                current.pointee = (current - offset).pointee
             }
         }
         self.endIndex &+= count
@@ -117,27 +117,27 @@ extension LZ77.InflatorOut {
             capacity: Int = (count + Swift.max(16, extra)).nextPowerOfTwo
         if self.capacity >= capacity {
             // rebase without reallocating
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe self.integral.update(from: $0, count: self.startIndex)
+            self.storage.withUnsafeMutablePointerToElements {
+                self.integral.update(from: $0, count: self.startIndex)
 
-                unsafe $0.update(from: $0 + self.startIndex, count: count)
+                $0.update(from: $0 + self.startIndex, count: count)
 
                 self.currentIndex -= self.startIndex
                 self.endIndex -= self.startIndex
                 self.startIndex = 0
             }
         } else {
-            self.storage = unsafe self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt8>) in
+            self.storage = self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt8>) in
 
                 let new: ManagedBuffer<Void, UInt8> = .create(minimumCapacity: capacity) {
                     self.capacity = $0.capacity
                     return ()
                 }
 
-                unsafe new.withUnsafeMutablePointerToElements {
-                    unsafe self.integral.update(from: body, count: self.startIndex)
+                new.withUnsafeMutablePointerToElements {
+                    self.integral.update(from: body, count: self.startIndex)
 
-                    unsafe $0.update(from: body + self.startIndex, count: count)
+                    $0.update(from: body + self.startIndex, count: count)
                 }
                 self.currentIndex -= self.startIndex
                 self.endIndex -= self.startIndex
@@ -149,8 +149,8 @@ extension LZ77.InflatorOut {
 
     mutating func checksum() -> UInt32 {
         // everything still in the storage buffer has not yet been integrated
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe self.integral.update(from: $0, count: self.endIndex)
+        self.storage.withUnsafeMutablePointerToElements {
+            self.integral.update(from: $0, count: self.endIndex)
             return self.integral.checksum
         }
     }

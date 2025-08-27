@@ -71,13 +71,13 @@ extension LZ77.DeflatorMatches {
 
     subscript(offset offset: Int) -> UInt32 {
         get {
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe $0[offset]
+            self.storage.withUnsafeMutablePointerToElements {
+                $0[offset]
             }
         }
         set(value) {
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe $0[offset] = value
+            self.storage.withUnsafeMutablePointerToElements {
+                $0[offset] = value
             }
         }
     }
@@ -173,8 +173,8 @@ extension LZ77.DeflatorMatches {
     }
 
     subscript(index: Int, decade decade: UInt8) -> Int {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe .init($0[index << 5 | (.init(decade) + 2)] & 0x00_00_ff_ff)
+        self.storage.withUnsafeMutablePointerToElements {
+            .init($0[index << 5 | (.init(decade) + 2)] & 0x00_00_ff_ff)
         }
     }
 

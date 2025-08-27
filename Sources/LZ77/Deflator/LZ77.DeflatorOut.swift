@@ -38,10 +38,10 @@ extension LZ77.DeflatorOut {
                 """)
             #endif
 
-            self.storage = unsafe self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt16>) in
+            self.storage = self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt16>) in
                 .create(minimumCapacity: self.capacity) {
-                    unsafe $0.withUnsafeMutablePointerToElements {
-                        unsafe $0.update(from: body, count: self.capacity)
+                    $0.withUnsafeMutablePointerToElements {
+                        $0.update(from: body, count: self.capacity)
                     }
                     self.capacity = $0.capacity
                     return ()
@@ -80,16 +80,16 @@ extension LZ77.DeflatorOut {
             b: Int = self.count & 15
         guard a + 1 < self.capacity else {
             let shifted: UInt32 = .init(bits) &<< b, mask: UInt16 = .max &<< b
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe $0[a] = unsafe $0[a] & ~mask | .init(truncatingIfNeeded: shifted)
+            self.storage.withUnsafeMutablePointerToElements {
+                $0[a] = $0[a] & ~mask | .init(truncatingIfNeeded: shifted)
             }
 
             if b + count >= 16 {
                 self.queue.append(self.copy(bytes: 2 * self.capacity))
                 self.queued += 1
 
-                unsafe self.storage.withUnsafeMutablePointerToElements {
-                    unsafe $0[0] = .init(shifted >> 16)
+                self.storage.withUnsafeMutablePointerToElements {
+                    $0[0] = .init(shifted >> 16)
                 }
                 self.count = (b + count) & 15
             } else {
@@ -99,9 +99,9 @@ extension LZ77.DeflatorOut {
         }
 
         let shifted: UInt32 = .init(bits) &<< b, mask: UInt16 = .max &<< b
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe $0[a] = $0[a] & ~mask | .init(truncatingIfNeeded: shifted)
-            unsafe $0[a + 1] = .init(shifted >> 16)
+        self.storage.withUnsafeMutablePointerToElements {
+            $0[a] = $0[a] & ~mask | .init(truncatingIfNeeded: shifted)
+            $0[a + 1] = .init(shifted >> 16)
         }
         self.count += count
     }
@@ -111,17 +111,17 @@ extension LZ77.DeflatorOut {
     }
 
     private func copy(bytes:Int) -> [UInt8] {
-        unsafe .init(unsafeUninitializedCapacity: bytes) { (buffer: inout UnsafeMutableBufferPointer<UInt8>, count: inout Int) in
+        .init(unsafeUninitializedCapacity: bytes) { (buffer: inout UnsafeMutableBufferPointer<UInt8>, count: inout Int) in
 
-            unsafe self.storage.withUnsafeMutablePointerToElements {
+            self.storage.withUnsafeMutablePointerToElements {
                 for a: Int in 0 ..< bytes >> 1 {
-                    let atom: UInt16 = unsafe $0[a]
-                    unsafe buffer[a << 1] = .init(truncatingIfNeeded: atom)
-                    unsafe buffer[a << 1 | 1] = .init(atom >> 8)
+                    let atom: UInt16 = $0[a]
+                    buffer[a << 1] = .init(truncatingIfNeeded: atom)
+                    buffer[a << 1 | 1] = .init(atom >> 8)
                 }
                 if bytes & 1 != 0 {
                     let a: Int = bytes >> 1
-                    unsafe buffer[a << 1] = unsafe .init(truncatingIfNeeded: $0[a])
+                    buffer[a << 1] = .init(truncatingIfNeeded: $0[a])
                 }
             }
 

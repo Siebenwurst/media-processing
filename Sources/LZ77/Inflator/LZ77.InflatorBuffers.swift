@@ -33,7 +33,7 @@ extension LZ77.InflatorBuffers {
                     return .tables(final: final, literals: l, distances: d)
 
                 case .fixed(let final):
-                    return unsafe .compressed(final: final, tables: .fixed)
+                    return .compressed(final: final, tables: .fixed)
 
                 case .bytes(let final, let count):
                     // compute endindex

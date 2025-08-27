@@ -60,48 +60,48 @@ extension LZ77.InflatorIn {
             }
             // transfer leftover elements
             self.capacity = capacity
-            self.storage = unsafe self.storage.withUnsafeMutablePointerToElements { (old: UnsafeMutablePointer<UInt16>) in
-                unsafe new.withUnsafeMutablePointerToElements {
-                    unsafe $0.update(from: old + a, count: (rollover + 1) >> 1)
+            self.storage = self.storage.withUnsafeMutablePointerToElements { (old: UnsafeMutablePointer<UInt16>) in
+                new.withUnsafeMutablePointerToElements {
+                    $0.update(from: old + a, count: (rollover + 1) >> 1)
                 }
                 return new
             }
         } else if a > 0 {
             // shift to beginning
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe $0.update(from: $0 + a, count: (rollover + 1) >> 1)
+            self.storage.withUnsafeMutablePointerToElements {
+                $0.update(from: $0 + a, count: (rollover + 1) >> 1)
             }
         }
 
         b -= a << 4
         // write new data
-        unsafe data.withUnsafeBufferPointer { (data: UnsafeBufferPointer<UInt8>) in
-            unsafe self.storage.withUnsafeMutablePointerToElements {
+        data.withUnsafeBufferPointer { (data: UnsafeBufferPointer<UInt8>) in
+            self.storage.withUnsafeMutablePointerToElements {
                 // already checked !data.isEmpty
                 let count: Int
                 var start: UnsafePointer<UInt8> = data.baseAddress!
                 let i: Int = (rollover + 1) >> 1
                 if rollover & 1 != 0 {
                     // odd number of bytes in the stream: move over 1 byte from the new data
-                    unsafe $0[i - 1] &= 0x00ff
-                    unsafe $0[i - 1] |= .init(start.pointee) << 8
-                    unsafe start += 1
+                    $0[i - 1] &= 0x00ff
+                    $0[i - 1] |= .init(start.pointee) << 8
+                    start += 1
                     count = data.count - 1
                 } else {
                     count = data.count
                 }
 
                 for j: Int in 0 ..< count >> 1 {
-                    unsafe $0[i &+ j]   = unsafe .init(start[j << 1 | 1]) << 8 | .init(start[j << 1])
+                    $0[i &+ j]   = .init(start[j << 1 | 1]) << 8 | .init(start[j << 1])
                 }
                 let k: Int = i + (count + 1) >> 1
                 if count & 1 != 0 {
-                    unsafe $0[k &- 1] = unsafe .init(start[count  - 1])
+                    $0[k &- 1] = .init(start[count  - 1])
                 }
                 // write 48 bits of padding
-                unsafe $0[k] = 0x0000
-                unsafe $0[k + 1] = 0x0000
-                unsafe $0[k + 2] = 0x0000
+                $0[k] = 0x0000
+                $0[k + 1] = 0x0000
+                $0[k + 2] = 0x0000
             }
 
             self.bytes = rollover + data.count
@@ -125,7 +125,7 @@ extension LZ77.InflatorIn {
     /// { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, b.10, b.9, b.8, b.7, b.6, b.5, b.4}
     /// ```
     subscript<I>(i: Int, count count: Int, as _: I.Type) -> I where I: FixedWidthInteger {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
+        self.storage.withUnsafeMutablePointerToElements {
             guard count > 0 else {
                 return .zero
             }
@@ -138,14 +138,14 @@ extension LZ77.InflatorIn {
             //            count = 14, b = 12
             //
             //      →               [ :x:x:x:x:x|x:x]
-            let extended: UInt32 = unsafe .init($0[a &+ 1]) << 16 | .init($0[a]),
+            let extended: UInt32 = .init($0[a &+ 1]) << 16 | .init($0[a]),
                 mask: UInt32 = ~(UInt32.max &<< count)
             return .init(extended &>> b & mask)
         }
     }
 
     subscript(i: Int) -> UInt16 {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
+        self.storage.withUnsafeMutablePointerToElements {
             let a: Int = i >> 4,
                 b: Int = i & 0x0f
             //    a + 2           a + 1             a
@@ -156,7 +156,7 @@ extension LZ77.InflatorIn {
             //      →   [x:x:x:x:x:x|x:x]
             //  creating a uint32 and shifting that is faster than shifting
             //  the two components individually
-            let extended: UInt32 = unsafe .init($0[a &+ 1]) << 16 | .init($0[a])
+            let extended: UInt32 = .init($0[a &+ 1]) << 16 | .init($0[a])
             return .init(truncatingIfNeeded: extended &>> b)
         }
     }

@@ -44,13 +44,13 @@ extension F14.HashTable {
         self.storage = .create(minimumCapacity: districts << 7 + 0x80) { _ in () }
         self.mask = (districts &- 1) << 7
         // initialize memory to zero
-        unsafe self.withUnsafeMutableAlignedBytes { (buffer: UnsafeMutableRawPointer) -> () in
-            unsafe buffer.initializeMemory(as: UInt8.self, repeating: 0, count: districts << 7)
+        self.withUnsafeMutableAlignedBytes { (buffer: UnsafeMutableRawPointer) -> () in
+            buffer.initializeMemory(as: UInt8.self, repeating: 0, count: districts << 7)
         }
     }
 
     func find(_ key: UInt32) -> UInt16? {
-        unsafe self.withUnsafeMutableAlignedBytes { (buffer: UnsafeMutableRawPointer) -> UInt16? in
+        self.withUnsafeMutableAlignedBytes { (buffer: UnsafeMutableRawPointer) -> UInt16? in
 
             let hash: F14.Hash = .init(key)
 
@@ -58,7 +58,7 @@ extension F14.HashTable {
             let start: F14.District.Index = hash.startIndex(mask: self.mask)
             var current: F14.District.Index = start
             repeat {
-                let district: F14.District = unsafe buffer + current,
+                let district: F14.District = buffer + current,
                     tagged: UInt16 = district.header.find(tag)
 
                 var i: Int = tagged.trailingZeroBitCount
@@ -95,7 +95,7 @@ extension F14.HashTable {
     }
 
     func remove(key:UInt32, value:UInt16) {
-        unsafe self.withUnsafeMutableAlignedBytes { (buffer: UnsafeMutableRawPointer) in
+        self.withUnsafeMutableAlignedBytes { (buffer: UnsafeMutableRawPointer) in
 
             let hash: F14.Hash = .init(key)
 
@@ -103,7 +103,7 @@ extension F14.HashTable {
                 start: F14.District.Index = hash.startIndex(mask: self.mask)
             var current: F14.District.Index = start
             repeat {
-                let district: F14.District = unsafe buffer + current,
+                let district: F14.District = buffer + current,
                     tagged: UInt16 = district.header.find(tag)
 
                 var i: Int = tagged.trailingZeroBitCount
@@ -121,13 +121,13 @@ extension F14.HashTable {
 
                     // (key, value) pair was found. delete the pair by
                     // marking its status as vacant.
-                    unsafe district.tags[i] = 0
+                    district.tags[i] = 0
 
                     // roll down the displacement counts up to, but not
                     // including the deletion point.
                     while current != start {
                         current = hash.index(before: current, mask: self.mask)
-                        unsafe (buffer + current).displaced -= 1
+                        (buffer + current).displaced -= 1
                     }
                     return
                 }
@@ -143,7 +143,7 @@ extension F14.HashTable {
 
     @discardableResult
     func update(key: UInt32, value: UInt16) -> UInt16? {
-        unsafe self.withUnsafeMutableAlignedBytes { (buffer: UnsafeMutableRawPointer) in
+        self.withUnsafeMutableAlignedBytes { (buffer: UnsafeMutableRawPointer) in
 
             let hash: F14.Hash = .init(key)
 
@@ -151,7 +151,7 @@ extension F14.HashTable {
                 start: F14.District.Index = hash.startIndex(mask: self.mask)
             var current: F14.District.Index = start
             repeat {
-                let district: F14.District = unsafe buffer + current,
+                let district: F14.District = buffer + current,
                     tagged: UInt16 = district.header.find(tag)
 
                 var i: Int = tagged.trailingZeroBitCount
@@ -181,7 +181,7 @@ extension F14.HashTable {
                 // found an empty slot. now we need to check if a matching
                 // (key, value) pair is still in the dictionary, and delete
                 // it if necessary.
-                unsafe district.tags[j] = tag
+                district.tags[j] = tag
                 district[j].key = key
                 district[j].value = value
 
@@ -199,7 +199,7 @@ extension F14.HashTable {
                         break
                     }
 
-                    let district: F14.District = unsafe buffer + current,
+                    let district: F14.District = buffer + current,
                         tagged: UInt16 = district.header.find(tag)
 
                     var i: Int = tagged.trailingZeroBitCount
@@ -212,10 +212,10 @@ extension F14.HashTable {
                         // key was found. delete it, and roll down all the
                         // displacement counts starting from the insertion point
                         // up to (but not including) the deletion point
-                        unsafe district.tags[i] = 0
+                        district.tags[i] = 0
                         repeat {
                             current = hash.index(before: current, mask: self.mask)
-                            unsafe (buffer + current).displaced -= 1
+                            (buffer + current).displaced -= 1
                         } while current != insertion
 
                         return district[i].value
@@ -230,7 +230,7 @@ extension F14.HashTable {
                 current = insertion
                 while current != start {
                     current = hash.index(before: current, mask: self.mask)
-                    unsafe (buffer + current).displaced += 1
+                    (buffer + current).displaced += 1
                 }
 
                 return nil
@@ -243,12 +243,12 @@ extension F14.HashTable {
     }
 
     private func withUnsafeMutableAlignedBytes<R>(_ body:(UnsafeMutableRawPointer) throws -> R) rethrows -> R {
-        try unsafe self.storage.withUnsafeMutablePointerToElements { (allocation: UnsafeMutablePointer<UInt8>) -> R in
+        try self.storage.withUnsafeMutablePointerToElements { (allocation: UnsafeMutablePointer<UInt8>) -> R in
 
             // can use ! here because a null pointer bitpattern is impossible here
             let aligned: Int = (.init(bitPattern: allocation) &+ 0x7f) & ~0x7f
-            let buffer = unsafe UnsafeMutableRawPointer(bitPattern: aligned)!
-            return try unsafe body(buffer)
+            let buffer = UnsafeMutableRawPointer(bitPattern: aligned)!
+            return try body(buffer)
         }
     }
 }

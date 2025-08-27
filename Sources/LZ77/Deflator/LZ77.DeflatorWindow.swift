@@ -24,13 +24,13 @@ extension LZ77.DeflatorWindow {
 
     private subscript(modular: Int) -> Element {
         get {
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe $0[modular]
+            self.storage.withUnsafeMutablePointerToElements {
+                $0[modular]
             }
         }
         set(value) {
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe $0[modular] = value
+            self.storage.withUnsafeMutablePointerToElements {
+                $0[modular] = value
             }
         }
     }
@@ -112,9 +112,9 @@ extension LZ77.DeflatorWindow {
         goal: Int,
         delegate: (_ run: Int, _ distance: Int) -> ())
     {
-        unsafe lookahead.withUnsafePointer { (v: UnsafePointer<UInt8>) in
+        lookahead.withUnsafePointer { (v: UnsafePointer<UInt8>) in
 
-            unsafe self.storage.withUnsafeMutablePointerToElements { (w: UnsafeMutablePointer<Element>) in
+            self.storage.withUnsafeMutablePointerToElements { (w: UnsafeMutablePointer<Element>) in
 
                 guard let next: UInt16 = head.next else {
                     return
@@ -132,14 +132,14 @@ extension LZ77.DeflatorWindow {
                         let a: Int = min(distance, limit)
                         while run < a {
                             let i: Int = (current &+ run) & mask
-                            guard unsafe w[i].value == v[run] else {
+                            guard w[i].value == v[run] else {
                                 break scan
                             }
                             run += 1
                         }
 
                         var i: Int = max(0, 4 - distance)
-                        while run < limit, unsafe v[i] == v[run] {
+                        while run < limit, v[i] == v[run] {
                             i += 1
                             run += 1
                         }

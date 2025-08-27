@@ -3,8 +3,8 @@ extension LZ77 {
         // these are only used by the deflator in deflate.swift,, the inflator
         // reads these values from the Semistatic table, for memory locality
         static subscript<T>(byte: T) -> T where T: BinaryInteger {
-            unsafe self.table.withUnsafeBufferPointer {
-                unsafe .init($0[.init(byte)])
+            self.table.withUnsafeBufferPointer {
+                .init($0[.init(byte)])
             }
         }
 

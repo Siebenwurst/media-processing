@@ -88,7 +88,7 @@ public struct ImageProcessor: Sendable {
         let (filePath, width, height) = try await compressImage(inputFile: image, size: 100, format: "png")
         let raw = try await fileSystem.withFileHandle(forReadingAt: filePath) { read in
             let sequence = read.readChunks(chunkLength: .bytes(1))
-                .map { unsafe $0.getInteger(at: $0.readerIndex, as: UInt8.self).unsafelyUnwrapped }
+                .map { $0.getInteger(at: $0.readerIndex, as: UInt8.self).unsafelyUnwrapped }
             return try await PNGImage.decode(from: sequence).unpack(as: RGBA<UInt8>.self)
         }
 
@@ -171,25 +171,25 @@ internal enum Base64: Sendable {
         let base64StringLength = ((bytes.count + 2) / 3) * 4
         let alphabet = Base64.encodingTable
 
-        return unsafe String(unsafeUninitializedCapacity: base64StringLength) { backingStorage in
+        return String(unsafeUninitializedCapacity: base64StringLength) { backingStorage in
             var input = bytes.makeIterator()
             var offset = 0
             while let firstByte = input.next() {
                 let secondByte = input.next()
                 let thirdByte = input.next()
 
-                unsafe backingStorage[offset] = Base64.encode(alphabet: alphabet, firstByte: firstByte)
-                unsafe backingStorage[offset + 1] = Base64.encode(
+                backingStorage[offset] = Base64.encode(alphabet: alphabet, firstByte: firstByte)
+                backingStorage[offset + 1] = Base64.encode(
                     alphabet: alphabet,
                     firstByte: firstByte,
                     secondByte: secondByte
                 )
-                unsafe backingStorage[offset + 2] = Base64.encode(
+                backingStorage[offset + 2] = Base64.encode(
                     alphabet: alphabet,
                     secondByte: secondByte,
                     thirdByte: thirdByte
                 )
-                unsafe backingStorage[offset + 3] = Base64.encode(alphabet: alphabet, thirdByte: thirdByte)
+                backingStorage[offset + 3] = Base64.encode(alphabet: alphabet, thirdByte: thirdByte)
                 offset += 4
             }
             return offset

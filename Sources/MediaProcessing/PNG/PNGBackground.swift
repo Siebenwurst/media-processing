@@ -105,17 +105,17 @@ extension PNGBackground {
         case .palette(index: let i):
             return [.init(i)]
         case .rgb(let c):
-            return unsafe .init(unsafeUninitializedCapacity: 6)
+            return .init(unsafeUninitializedCapacity: 6)
             {
-                unsafe $0.store(c.r, asBigEndian: UInt16.self, at: 0)
-                unsafe $0.store(c.g, asBigEndian: UInt16.self, at: 2)
-                unsafe $0.store(c.b, asBigEndian: UInt16.self, at: 4)
+                $0.store(c.r, asBigEndian: UInt16.self, at: 0)
+                $0.store(c.g, asBigEndian: UInt16.self, at: 2)
+                $0.store(c.b, asBigEndian: UInt16.self, at: 4)
                 $1 = $0.count
             }
         case .v(let v):
-            return unsafe .init(unsafeUninitializedCapacity: 2)
+            return .init(unsafeUninitializedCapacity: 2)
             {
-                unsafe $0.store(v, asBigEndian: UInt16.self, at: 0)
+                $0.store(v, asBigEndian: UInt16.self, at: 0)
                 $1 = $0.count
             }
         }

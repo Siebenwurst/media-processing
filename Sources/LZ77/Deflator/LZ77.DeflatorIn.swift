@@ -33,15 +33,15 @@ extension LZ77.DeflatorIn {
             print("warning: managed buffer in type '\(String.init(reflecting: Self.self))' has multiple references; buffer is being copied to preserve value semantics")
             #endif
 
-            self.storage = unsafe self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt8>) in
+            self.storage = self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt8>) in
 
                 let new: ManagedBuffer<Void, UInt8> = .create(minimumCapacity: self.capacity) {
                     self.capacity = $0.capacity
                     return ()
                 }
-                unsafe new.withUnsafeMutablePointerToElements {
+                new.withUnsafeMutablePointerToElements {
                     // cannot do shift here, since the checksum has to be updated
-                    unsafe $0.update(from: body, count: self.endIndex)
+                    $0.update(from: body, count: self.endIndex)
                 }
                 return new
             }
@@ -49,8 +49,8 @@ extension LZ77.DeflatorIn {
     }
 
     var first: UInt8 {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe $0[self.startIndex]
+        self.storage.withUnsafeMutablePointerToElements {
+            $0[self.startIndex]
         }
     }
 
@@ -61,7 +61,7 @@ extension LZ77.DeflatorIn {
     }
 
     mutating func enqueue(contentsOf elements: ArraySlice<UInt8>) {
-        unsafe elements.withUnsafeBufferPointer {
+        elements.withUnsafeBufferPointer {
             guard let base: UnsafePointer<UInt8> = $0.baseAddress else {
                 return
             }
@@ -69,8 +69,8 @@ extension LZ77.DeflatorIn {
             // always allocate 4 extra tail elements to allow for limited reads
             // from beyond the end of the buffer
             self.reserve(count + 4)
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe ($0 + self.endIndex).update(from: base, count: count)
+            self.storage.withUnsafeMutablePointerToElements {
+                ($0 + self.endIndex).update(from: base, count: count)
             }
             self.endIndex += count
         }
@@ -118,25 +118,25 @@ extension LZ77.DeflatorIn {
         let capacity: Int  = (4 + self.count + Swift.max(16, extra)).nextPowerOfTwo
         if self.capacity >= capacity {
             // rebase without reallocating
-            unsafe self.storage.withUnsafeMutablePointerToElements {
-                unsafe self.integral.update(from: $0 + 4, count: self.startIndex - 4)
+            self.storage.withUnsafeMutablePointerToElements {
+                self.integral.update(from: $0 + 4, count: self.startIndex - 4)
 
-                unsafe $0.update(from: $0 - 4 + self.startIndex, count: self.count + 4)
+                $0.update(from: $0 - 4 + self.startIndex, count: self.count + 4)
 
                 self.endIndex = 4 + self.count
                 self.startIndex = 4
             }
         } else {
-            self.storage = unsafe self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt8>) in
+            self.storage = self.storage.withUnsafeMutablePointerToElements { (body: UnsafeMutablePointer<UInt8>) in
                 let new: ManagedBuffer<Void, UInt8> = .create(minimumCapacity: capacity) {
                     self.capacity = $0.capacity
                     return ()
                 }
 
-                unsafe new.withUnsafeMutablePointerToElements {
-                    unsafe self.integral.update(from: body + 4, count: self.startIndex - 4)
+                new.withUnsafeMutablePointerToElements {
+                    self.integral.update(from: body + 4, count: self.startIndex - 4)
 
-                    unsafe $0.update(from: body - 4 + self.startIndex, count: self.count + 4)
+                    $0.update(from: body - 4 + self.startIndex, count: self.count + 4)
                 }
                 self.endIndex = 4 + self.count
                 self.startIndex = 4
@@ -147,16 +147,16 @@ extension LZ77.DeflatorIn {
 
     mutating func checksum() -> UInt32 {
         // everything still in the storage buffer has not yet been integrated
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe self.integral.update(from: $0 + 4, count: self.endIndex - 4)
+        self.storage.withUnsafeMutablePointerToElements {
+            self.integral.update(from: $0 + 4, count: self.endIndex - 4)
             return self.integral.checksum
         }
     }
 
     // pointer to offset at -4
     func withUnsafePointer<R>(_ body:(UnsafePointer<UInt8>) throws -> R) rethrows -> R {
-        try unsafe self.storage.withUnsafeMutablePointerToElements {
-            try unsafe body($0 - 4 + self.startIndex)
+        try self.storage.withUnsafeMutablePointerToElements {
+            try body($0 - 4 + self.startIndex)
         }
     }
 

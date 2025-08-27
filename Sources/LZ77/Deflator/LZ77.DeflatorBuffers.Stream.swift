@@ -479,8 +479,8 @@ extension LZ77.DeflatorBuffers.Stream {
         distances:Int,
         final:Bool
     ) {
-        let codelengths: [UInt16] = unsafe .init(unsafeUninitializedCapacity: 19) {
-            unsafe $0.initialize(repeating: 0)
+        let codelengths: [UInt16] = .init(unsafeUninitializedCapacity: 19) {
+            $0.initialize(repeating: 0)
             for (length, level):(UInt16, Range<Int>) in zip(1 ... 8, tree.levels) {
                 for symbol: UInt8 in tree.symbols[level] {
                     let z:Int = [
@@ -489,11 +489,11 @@ extension LZ77.DeflatorBuffers.Stream {
                         0, 1, 2
                     ][.init(symbol)]
 
-                    unsafe $0[z] = length
+                    $0[z] = length
                 }
             }
             // max(4, _) because HCLEN cannot be less than 4
-            $1 = unsafe max(4, $0.reversed().drop { $0 == 0 }.count)
+            $1 = max(4, $0.reversed().drop { $0 == 0 }.count)
         }
 
         self.output.append(final ? 0b10_1 : 0b10_0, count: 3)

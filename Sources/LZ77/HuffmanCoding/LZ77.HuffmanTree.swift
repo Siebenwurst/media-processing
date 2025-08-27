@@ -114,10 +114,10 @@ extension LZ77.HuffmanTree where Symbol: BinaryInteger {
         for length: Int in lengths {
             counts[length] += 1
         }
-        let ranges: [Range<Int>] = unsafe .init(unsafeUninitializedCapacity: 15) {
+        let ranges: [Range<Int>] = .init(unsafeUninitializedCapacity: 15) {
             var base:Int = 0
             for (i, count): (offset: Int, element: Int) in counts.dropFirst().enumerated() {
-                unsafe $0[i] = base ..< base + count
+                $0[i] = base ..< base + count
                 base += count
             }
             $1 = 15
@@ -127,9 +127,9 @@ extension LZ77.HuffmanTree where Symbol: BinaryInteger {
             return nil
         }
 
-        let packed: [Symbol] = unsafe .init(unsafeUninitializedCapacity: ranges[14].upperBound) {
+        let packed: [Symbol] = .init(unsafeUninitializedCapacity: ranges[14].upperBound) {
             for (symbol, length): (Symbol, Int) in zip(symbols, lengths) where length > 0 {
-                unsafe $0[ranges[length - 1].upperBound - counts[length]] = symbol
+                $0[ranges[length - 1].upperBound - counts[length]] = symbol
                 counts[length] -= 1
             }
             $1 = ranges[14].upperBound
@@ -138,22 +138,22 @@ extension LZ77.HuffmanTree where Symbol: BinaryInteger {
     }
 
     func table<Pattern>(initializing destination: UnsafeMutablePointer<Pattern>) where Pattern: LZ77.HuffmanPattern<Symbol> {
-        var current: UnsafeMutablePointer<Pattern> = unsafe destination
+        var current: UnsafeMutablePointer<Pattern> = destination
         for (l, level): (Int, Range<Int>) in zip(1 ... 8, self.levels.prefix(8)) {
             let clones: Int  = 256 >> l
             for symbol: Symbol in self.symbols[level] {
                 let pattern: Pattern = .init(symbol, length: l)
-                unsafe current.initialize(repeating: pattern, count: clones)
-                unsafe current += clones
+                current.initialize(repeating: pattern, count: clones)
+                current += clones
             }
         }
-        unsafe current = unsafe destination + 256
+        current = destination + 256
         for (l, level): (Int, Range<Int>) in zip(9 ... 15, self.levels.dropFirst(8)) {
             let clones: Int  = 32768 >> l
             for symbol: Symbol in self.symbols[level] {
                 let pattern: Pattern = .init(symbol, length: l)
-                unsafe current.initialize(repeating: pattern, count: clones)
-                unsafe current += clones
+                current.initialize(repeating: pattern, count: clones)
+                current += clones
             }
         }
     }
@@ -168,14 +168,14 @@ extension LZ77.HuffmanTree where Symbol: BinaryInteger {
     ) {
         // initialize all entries to 0, as symbols with frequency 0 are omitted
         // from self.symbols
-        unsafe destination.initialize(repeating: .init(shape: (length: 0, extra: 0), bits: 0), count: count)
+        destination.initialize(repeating: .init(shape: (length: 0, extra: 0), bits: 0), count: count)
 
         var counter: UInt16  = 0
         for (length, level): (UInt8, Range<Int>) in zip(1 ... 15, self.levels) {
             for symbol: Symbol in self.symbols[level] {
                 assert(.init(symbol) < count, "symbol out of range")
 
-                unsafe destination[.init(symbol)] = .init(counter: counter,
+                destination[.init(symbol)] = .init(counter: counter,
                     shape: (length: length, extra: extra(symbol)))
                 counter += 1
             }
@@ -241,27 +241,27 @@ extension LZ77.HuffmanTree where Symbol: BinaryInteger {
             // the tree root, and convert level counts to codeword assignments
             let leaves: [Int] = Self.limitHeight(first.value.dropLast().reversed(), to: limit)
             // split symbols list into levels
-            let levels: [Range<Int>] = unsafe .init(unsafeUninitializedCapacity: 15) {
+            let levels: [Range<Int>] = .init(unsafeUninitializedCapacity: 15) {
                 var base: Int = symbols.startIndex
                 for (i, count): (Int, Int) in zip($0.indices, leaves) {
-                    unsafe $0[i] = base ..< base + count
+                    $0[i] = base ..< base + count
                     base += count
                 }
                 // symbols array must have length exactly equal to 16
                 for i: Int in $0.indices.dropFirst(leaves.count) {
-                    unsafe $0[i] = base ..< base
+                    $0[i] = base ..< base
                 }
                 $1 = $0.count
             }
 
             // symbols with the same length are sorted by symbol value. this
             // ordering may be different from the plain frequency-keyed order.
-            let resorted: [Symbol] = unsafe .init(unsafeUninitializedCapacity: symbols.count) {
+            let resorted: [Symbol] = .init(unsafeUninitializedCapacity: symbols.count) {
                 guard let base: UnsafeMutablePointer<Symbol> = $0.baseAddress else {
                     fatalError("unreachable")
                 }
                 for level: Range<Int> in levels {
-                    unsafe (base + level.lowerBound).initialize(from: symbols[level].sorted(), count: level.count)
+                    (base + level.lowerBound).initialize(from: symbols[level].sorted(), count: level.count)
                 }
                 $1 = symbols.count
             }

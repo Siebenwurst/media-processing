@@ -669,12 +669,12 @@ extension Array where Element == UInt8 {
 extension UnsafeMutableBufferPointer where Element == UInt8 {
     func store<U, T>(_ value: U, asBigEndian type: T.Type, at byte: Int = 0) where U: BinaryInteger, T: FixedWidthInteger {
         let cast: T = .init(truncatingIfNeeded: value)
-        unsafe Swift.withUnsafeBytes(of: cast.bigEndian) {
-            guard let source: UnsafeRawPointer = $0.baseAddress, let destination:UnsafeMutableRawPointer = unsafe self.baseAddress.map(UnsafeMutableRawPointer.init(_:)) else {
+        Swift.withUnsafeBytes(of: cast.bigEndian) {
+            guard let source: UnsafeRawPointer = $0.baseAddress, let destination:UnsafeMutableRawPointer = self.baseAddress.map(UnsafeMutableRawPointer.init(_:)) else {
                 return
             }
 
-            unsafe (destination + byte).copyMemory(from: source, byteCount: MemoryLayout<T>.size)
+            (destination + byte).copyMemory(from: source, byteCount: MemoryLayout<T>.size)
         }
     }
 }
@@ -707,7 +707,7 @@ extension PNGImage {
         let count: Int = header.size.x * header.size.y,
             bytes: Int = count * (layout.format.pixel.volume + 7) >> 3
         if uninitialized {
-            self.storage = unsafe .init(unsafeUninitializedCapacity: bytes) {
+            self.storage = .init(unsafeUninitializedCapacity: bytes) {
                 $1 = bytes
             }
         } else {
@@ -831,13 +831,13 @@ extension PNGImage {
     }
 
     private mutating func overdraw<T>(at base: (x: Int, y: Int), brush: (x: Int, y: Int), element: T.Type) {
-        unsafe self.storage.withUnsafeMutableBytes {
-            let storage: UnsafeMutableBufferPointer<T> = unsafe $0.bindMemory(to: T.self)
+        self.storage.withUnsafeMutableBytes {
+            let storage: UnsafeMutableBufferPointer<T> = $0.bindMemory(to: T.self)
             for y in base.y ..< min(base.y + brush.y, self.size.y) {
                 for x in stride(from: base.x, to: self.size.x, by: brush.x) {
                     let i = base.y * self.size.x + x
                     for x in x ..< min(x + brush.x, self.size.x) {
-                        unsafe storage[y * self.size.x + x] = unsafe storage[i]
+                        storage[y * self.size.x + x] = storage[i]
                     }
                 }
             }
@@ -847,20 +847,20 @@ extension PNGImage {
 
 extension ArraySlice where Element == UInt8 {
     func load<T, U>(bigEndian: T.Type, as type: U.Type) -> U where T: FixedWidthInteger, U: BinaryInteger {
-        return unsafe self.withUnsafeBufferPointer { (buffer: UnsafeBufferPointer<UInt8>) in
+        return self.withUnsafeBufferPointer { (buffer: UnsafeBufferPointer<UInt8>) in
 
             assert(buffer.count >= MemoryLayout<T>.size, "attempt to load \(T.self) from slice of size \(buffer.count)")
 
             var storage: T = .init()
-            let value: T = unsafe withUnsafeMutablePointer(to: &storage) {
-                unsafe $0.deinitialize(count: 1)
+            let value: T = withUnsafeMutablePointer(to: &storage) {
+                $0.deinitialize(count: 1)
 
-                let source: UnsafeRawPointer = unsafe .init(buffer.baseAddress!),
+                let source: UnsafeRawPointer = .init(buffer.baseAddress!),
                     raw: UnsafeMutableRawPointer = .init($0)
 
-                unsafe raw.copyMemory(from: source, byteCount: MemoryLayout<T>.size)
+                raw.copyMemory(from: source, byteCount: MemoryLayout<T>.size)
 
-                return unsafe raw.load(as: T.self)
+                return raw.load(as: T.self)
             }
 
             return U(T(bigEndian: value))
@@ -891,7 +891,7 @@ func convolve<A, T, C>(
     _ kernel: (T, A) -> C,
     _ transform: (A) -> T
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger {
-    unsafe samples.map {
+    samples.map {
         let v: A = .init(bigEndian: $0)
         return kernel(transform(v), v)
     }
@@ -903,8 +903,8 @@ func convolve<A, T, C>(
     _ transform: (A) -> T
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger {
     stride(from: samples.startIndex, to: samples.endIndex, by: 2).map {
-        let v: A = unsafe .init(bigEndian: samples[$0])
-        let a: A = unsafe .init(bigEndian: samples[$0 &+ 1])
+        let v: A = .init(bigEndian: samples[$0])
+        let a: A = .init(bigEndian: samples[$0 &+ 1])
         return kernel((transform(v), transform(a)))
     }
 }
@@ -915,9 +915,9 @@ func convolve<A, T, C>(
     _ transform:(A) -> T
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger {
     stride(from: samples.startIndex, to: samples.endIndex, by: 3).map {
-        let r: A = unsafe .init(bigEndian: samples[$0])
-        let g: A = unsafe .init(bigEndian: samples[$0 &+ 1])
-        let b: A = unsafe .init(bigEndian: samples[$0 &+ 2])
+        let r: A = .init(bigEndian: samples[$0])
+        let g: A = .init(bigEndian: samples[$0 &+ 1])
+        let b: A = .init(bigEndian: samples[$0 &+ 2])
         return kernel((transform(r), transform(g), transform(b)), (r, g, b))
     }
 }
@@ -928,10 +928,10 @@ func convolve<A, T, C>(
     _ transform:(A) -> T
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger {
     stride(from: samples.startIndex, to: samples.endIndex, by: 4).map {
-        let r: A = unsafe .init(bigEndian: samples[$0     ])
-        let g: A = unsafe .init(bigEndian: samples[$0 &+ 1])
-        let b: A = unsafe .init(bigEndian: samples[$0 &+ 2])
-        let a: A = unsafe .init(bigEndian: samples[$0 &+ 3])
+        let r: A = .init(bigEndian: samples[$0     ])
+        let g: A = .init(bigEndian: samples[$0 &+ 1])
+        let b: A = .init(bigEndian: samples[$0 &+ 2])
+        let a: A = .init(bigEndian: samples[$0 &+ 3])
         return kernel((transform(r), transform(g), transform(b), transform(a)))
     }
 }
@@ -942,7 +942,7 @@ func convolve<A, T, C>(
     _ dereference: (Int) -> (A, A, A, A),
     _ transform: (A) -> T
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger {
-    unsafe samples.map {
+    samples.map {
         let (r, g, b, a): (A, A, A, A) = dereference(.init($0))
         return kernel((transform(r), transform(g), transform(b), transform(a)))
     }
@@ -979,17 +979,17 @@ func convolve<A, T, C>(
     dereference: (Int) -> (A, A, A, A),
     kernel: ((T, T, T, T)) -> C
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger, T: FixedWidthInteger & UnsignedInteger {
-    unsafe buffer.withUnsafeBufferPointer {
+    buffer.withUnsafeBufferPointer {
         if T.bitWidth == A.bitWidth {
-            return unsafe convolve($0, kernel, dereference, T.init(_:))
+            return convolve($0, kernel, dereference, T.init(_:))
         } else if T.bitWidth >  A.bitWidth {
             let quantum: T = quantum(source: A.bitWidth, destination: T.bitWidth)
-            return unsafe convolve($0, kernel, dereference) {
+            return convolve($0, kernel, dereference) {
                 quantum &* .init($0)
             }
         } else {
             let shift: Int = A.bitWidth - T.bitWidth
-            return unsafe convolve($0, kernel, dereference) {
+            return convolve($0, kernel, dereference) {
                 .init($0 &>> shift)
             }
         }
@@ -1027,18 +1027,18 @@ func convolve<A, T, C>(
     depth: Int,
     kernel: ((T, T)) -> C
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger, T: FixedWidthInteger & UnsignedInteger {
-    unsafe buffer.withUnsafeBytes {
-        let samples: UnsafeBufferPointer<A> = unsafe $0.bindMemory(to: A.self)
+    buffer.withUnsafeBytes {
+        let samples: UnsafeBufferPointer<A> = $0.bindMemory(to: A.self)
         if T.bitWidth == depth {
-            return unsafe convolve(samples, kernel, T.init(_:))
+            return convolve(samples, kernel, T.init(_:))
         } else if T.bitWidth > depth {
             let quantum: T = quantum(source: depth, destination: T.bitWidth)
-            return unsafe convolve(samples, kernel) {
+            return convolve(samples, kernel) {
                 quantum &* .init($0)
             }
         } else {
             let shift: Int = depth - T.bitWidth
-            return unsafe convolve(samples, kernel) {
+            return convolve(samples, kernel) {
                 .init($0 &>> shift)
             }
         }
@@ -1077,18 +1077,18 @@ func convolve<A, T, C>(
     depth: Int,
     kernel: ((T, T, T), (A, A, A)) -> C
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger, T: FixedWidthInteger & UnsignedInteger {
-    unsafe buffer.withUnsafeBytes {
-        let samples: UnsafeBufferPointer<A> = unsafe $0.bindMemory(to: A.self)
+    buffer.withUnsafeBytes {
+        let samples: UnsafeBufferPointer<A> = $0.bindMemory(to: A.self)
         if T.bitWidth == depth {
-            return unsafe convolve(samples, kernel, T.init(_:))
+            return convolve(samples, kernel, T.init(_:))
         } else if T.bitWidth > depth {
             let quantum: T = quantum(source: depth, destination: T.bitWidth)
-            return unsafe convolve(samples, kernel) {
+            return convolve(samples, kernel) {
                 quantum &* .init($0)
             }
         } else {
             let shift: Int = depth - T.bitWidth
-            return unsafe convolve(samples, kernel) {
+            return convolve(samples, kernel) {
                 .init($0 &>> shift)
             }
         }
@@ -1126,18 +1126,18 @@ func convolve<A, T, C>(
     depth: Int,
     kernel: ((T, T, T, T)) -> C
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger, T: FixedWidthInteger & UnsignedInteger {
-    unsafe buffer.withUnsafeBytes {
-        let samples: UnsafeBufferPointer<A> = unsafe $0.bindMemory(to: A.self)
+    buffer.withUnsafeBytes {
+        let samples: UnsafeBufferPointer<A> = $0.bindMemory(to: A.self)
         if T.bitWidth == depth {
-            return unsafe convolve(samples, kernel, T.init(_:))
+            return convolve(samples, kernel, T.init(_:))
         } else if T.bitWidth > depth {
             let quantum: T = quantum(source: depth, destination: T.bitWidth)
-            return unsafe convolve(samples, kernel) {
+            return convolve(samples, kernel) {
                 quantum &* .init($0)
             }
         } else {
             let shift: Int = depth - T.bitWidth
-            return unsafe convolve(samples, kernel) {
+            return convolve(samples, kernel) {
                 .init($0 &>> shift)
             }
         }
@@ -1177,18 +1177,18 @@ func convolve<A, T, C>(
     depth: Int,
     kernel: (T, A) -> C
 ) -> [C] where A: FixedWidthInteger & UnsignedInteger, T: FixedWidthInteger & UnsignedInteger {
-    unsafe buffer.withUnsafeBytes {
-        let samples: UnsafeBufferPointer<A> = unsafe $0.bindMemory(to: A.self)
+    buffer.withUnsafeBytes {
+        let samples: UnsafeBufferPointer<A> = $0.bindMemory(to: A.self)
         if T.bitWidth == depth {
-            return unsafe convolve(samples, kernel, T.init(_:))
+            return convolve(samples, kernel, T.init(_:))
         } else if T.bitWidth >  depth {
             let quantum: T = quantum(source: depth, destination: T.bitWidth)
-            return unsafe convolve(samples, kernel) {
+            return convolve(samples, kernel) {
                 quantum &* .init($0)
             }
         } else {
             let shift: Int = depth - T.bitWidth
-            return unsafe convolve(samples, kernel) {
+            return convolve(samples, kernel) {
                 .init($0 &>> shift)
             }
         }

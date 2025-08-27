@@ -80,16 +80,16 @@ extension PNGContext {
     ///
     ///     The default value is `false`.
     mutating func push(data: [UInt8], overdraw: Bool = false) throws {
-        try unsafe self.decoder.push(
+        try self.decoder.push(
             data,
             size: self.image.size,
             pixel: self.image.layout.format.pixel,
             delegate: overdraw ? {
                 let s:(x:Int, y:Int) = ($1.x == 0 ? 0 : 1, $1.y & 0b111 == 0 ? 0 : 1)
-                unsafe self.image.assign(scanline: $0, at: $1, stride: $2.x)
+                self.image.assign(scanline: $0, at: $1, stride: $2.x)
                 self.image.overdraw(at: $1, brush: ($2.x >> s.x, $2.y >> s.y))
             } : {
-                unsafe self.image.assign(scanline: $0, at: $1, stride: $2.x)
+                self.image.assign(scanline: $0, at: $1, stride: $2.x)
             }
         )
     }

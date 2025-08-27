@@ -72,7 +72,7 @@ extension Base16 {
         var values: Values<ASCII> = .init(ascii)
         for offset: Int in bytes.indices {
             if let high: UInt8 = values.next(), let low: UInt8 = values.next() {
-                unsafe bytes[offset] = high << 4 | low
+                bytes[offset] = high << 4 | low
             } else {
                 return nil
             }
@@ -93,12 +93,12 @@ extension Base16 {
         into ascii: UnsafeMutableRawBufferPointer,
         with _: Digits.Type
     ) where Digits: BaseDigits {
-        unsafe withUnsafeBytes(of: words) {
+        withUnsafeBytes(of: words) {
             assert(2 * $0.count <= ascii.count)
 
-            for unsafe (offset, byte): (Int, UInt8) in unsafe zip(stride(from: ascii.startIndex, to: ascii.endIndex, by: 2), $0) {
-                unsafe ascii[offset] = Digits[byte >> 4]
-                unsafe ascii[offset + 1] = Digits[byte & 0x0f]
+            for (offset, byte): (Int, UInt8) in zip(stride(from: ascii.startIndex, to: ascii.endIndex, by: 2), $0) {
+                ascii[offset] = Digits[byte >> 4]
+                ascii[offset + 1] = Digits[byte & 0x0f]
             }
         }
     }
@@ -110,10 +110,10 @@ extension Base16 {
     /// method should only be used to load trivial types.
     @inlinable
     static func decode<BigEndian>(_ ascii: some Sequence<UInt8>, loading _: BigEndian.Type = BigEndian.self) -> BigEndian? {
-        unsafe withUnsafeTemporaryAllocation(byteCount: MemoryLayout<BigEndian>.size, alignment: MemoryLayout<BigEndian>.alignment) {
-            let words: UnsafeMutableRawBufferPointer = unsafe $0
-            if case _? = unsafe Self.decode(ascii, into: words) {
-                return unsafe $0.load(as: BigEndian.self)
+        withUnsafeTemporaryAllocation(byteCount: MemoryLayout<BigEndian>.size, alignment: MemoryLayout<BigEndian>.alignment) {
+            let words: UnsafeMutableRawBufferPointer = $0
+            if case _? = Self.decode(ascii, into: words) {
+                return $0.load(as: BigEndian.self)
             } else {
                 return nil
             }
@@ -125,24 +125,24 @@ extension Base16 {
     /// in the encoded output.
     ///
     /// This method is slightly faster than calling ``encode(_:with:)`` on an
-    /// unsafe buffer-pointer view of `words`.
+    /// buffer-pointer view of `words`.
     @inlinable
     public static func encode<BigEndian, Digits>(storing words: BigEndian, with _: Digits.Type) -> String where Digits: BaseDigits {
         let bytes: Int = 2 * MemoryLayout<BigEndian>.size
 
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
         if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 14.0, *) {
-            return unsafe .init(unsafeUninitializedCapacity: bytes) {
-                unsafe Self.encode(storing: words, into: UnsafeMutableRawBufferPointer.init($0), with: Digits.self)
+            return .init(unsafeUninitializedCapacity: bytes) {
+                Self.encode(storing: words, into: UnsafeMutableRawBufferPointer.init($0), with: Digits.self)
                 return bytes
             }
         }
 #endif
 
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        return unsafe .init(
+        return .init(
             decoding: [UInt8].init(unsafeUninitializedCapacity: bytes) {
-                unsafe Self.encode(storing: words, into: UnsafeMutableRawBufferPointer.init($0), with: Digits.self)
+                Self.encode(storing: words, into: UnsafeMutableRawBufferPointer.init($0), with: Digits.self)
                 $1 = bytes
             },
             as: Unicode.UTF8.self

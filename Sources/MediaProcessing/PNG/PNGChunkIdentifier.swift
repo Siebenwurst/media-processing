@@ -6,8 +6,8 @@ struct PNGChunkIdentifier: Hashable, Equatable, CustomStringConvertible
 
     /// A string displaying the ASCII representation of this chunk type identifier.
     var description: String {
-        unsafe withUnsafeBytes(of: self.name.bigEndian) {
-            unsafe .init(decoding: $0, as: Unicode.ASCII.self)
+        withUnsafeBytes(of: self.name.bigEndian) {
+            .init(decoding: $0, as: Unicode.ASCII.self)
         }
     }
 

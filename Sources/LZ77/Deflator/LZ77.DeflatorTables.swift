@@ -26,14 +26,14 @@ extension LZ77.DeflatorTables {
         meta: LZ77.HuffmanTree<UInt8>? = nil
     ) {
         self.storage = .create(minimumCapacity: 339) { _ in () }
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe runliteral.codewords(initializing: $0, count: 288) {
+        self.storage.withUnsafeMutablePointerToElements {
+            runliteral.codewords(initializing: $0, count: 288) {
                 $0 > 256 ? UInt8(LZ77.Composites[run: .init(truncatingIfNeeded: $0)].extra) : 0
             }
-            unsafe distance.codewords(initializing: $0 + 288, count: 32) {
+            distance.codewords(initializing: $0 + 288, count: 32) {
                 UInt8(LZ77.Composites[distance: $0].extra)
             }
-            unsafe meta?.codewords(initializing: $0 + 320, count:  19) {
+            meta?.codewords(initializing: $0 + 320, count:  19) {
                 switch $0 {
                 case 18: return 7
                 case 17: return 3
@@ -45,20 +45,20 @@ extension LZ77.DeflatorTables {
     }
 
     subscript(runliteral symbol: UInt16) -> LZ77.Codeword {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe ($0)[.init(symbol)]
+        self.storage.withUnsafeMutablePointerToElements {
+            ($0)[.init(symbol)]
         }
     }
 
     subscript(distance symbol: UInt8) -> LZ77.Codeword {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe ($0 + 288)[.init(symbol)]
+        self.storage.withUnsafeMutablePointerToElements {
+            ($0 + 288)[.init(symbol)]
         }
     }
 
     subscript(meta symbol: UInt8) -> LZ77.Codeword {
-        unsafe self.storage.withUnsafeMutablePointerToElements {
-            unsafe ($0 + 320)[.init(symbol)]
+        self.storage.withUnsafeMutablePointerToElements {
+            ($0 + 320)[.init(symbol)]
         }
     }
 

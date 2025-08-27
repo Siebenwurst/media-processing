@@ -80,8 +80,8 @@ extension PNGDecoder {
                     Self.defilter(&scanline, last: last, delay: delay)
 
                     let base: (x: Int, y: Int) = (base.x, base.y + y * stride.y)
-                    try unsafe scanline.dropFirst().withUnsafeBufferPointer {
-                        try unsafe delegate($0, base, stride)
+                    try scanline.dropFirst().withUnsafeBufferPointer {
+                        try delegate($0, base, stride)
                     }
 
                     last = scanline
@@ -103,9 +103,9 @@ extension PNGDecoder {
                 #endif
 
                 Self.defilter(&scanline, last: last, delay: delay)
-                try unsafe scanline.dropFirst().withUnsafeBufferPointer
+                try scanline.dropFirst().withUnsafeBufferPointer
                 {
-                    try unsafe delegate($0, (0, y), (1, 1))
+                    try delegate($0, (0, y), (1, 1))
                 }
 
                 last = scanline
