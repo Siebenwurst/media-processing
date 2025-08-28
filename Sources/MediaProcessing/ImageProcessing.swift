@@ -44,9 +44,9 @@ public struct ImageProcessor: Sendable {
             var height: Int?
             for try await line in standardOutput.lines(encoding: UTF8.self) {
                 if line.starts(with: "width:") {
-                    width = (line.split(separator: ":").last?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { Int($0) }
+                    width = parseDimension(from: line)
                 } else if line.starts(with: "height:") {
-                    height = (line.split(separator: ":").last?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { Int($0) }
+                    height = parseDimension(from: line)
                 }
             }
             return (width, height)
@@ -121,6 +121,10 @@ public struct ImageProcessor: Sendable {
 
         let filePathWildcard = fileParts.appending("tn_%s.\(format ?? filename.extension ?? "jpeg")")
         return (filePath, filePathWildcard)
+    }
+
+    func parseDimension(from line: String) -> Int? {
+        (line.split(separator: ":").last?.replacing(/(^\s+|\s+$)/, with: "")).flatMap { Int($0) }
     }
 }
 
