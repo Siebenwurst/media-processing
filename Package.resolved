@@ -1,5 +1,5 @@
 {
-  "originHash" : "7cf06bbce00f2776e79f2679c85187fab0fdcd785947abba3685ff72b68238ac",
+  "originHash" : "f5032a25aaabd4fa717bc621eb0d5ad9b086a5d4ac7c01c5851e4b0934d135ec",
   "pins" : [
     {
       "identity" : "swift-atomics",
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-subprocess.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "7dc6e548114db7d6b10fddf29bcd5215c3875891"
+        "revision" : "44be5d56aa4b26dc2003a67c0288a6a68366a87d",
+        "version" : "0.1.0"
       }
     },
     {
