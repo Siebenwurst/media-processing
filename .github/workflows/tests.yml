@@ -13,10 +13,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Install zstd
+    - name: Install dependencies
       run: |
         sudo apt-get update -y
-        sudo apt-get install -y zstd
+        sudo apt-get install -y zstd libvips libvips-tools
     - name: Restore .build
       id: "restore-build"
       uses: actions/cache/restore@v4

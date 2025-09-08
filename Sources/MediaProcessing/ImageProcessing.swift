@@ -25,7 +25,10 @@ public struct ImageProcessor: Sendable {
         } else {
             thumbnailExecutable = .name("vipsthumbnail")
         }
-        let thumbnailExecutionResult = try await run(thumbnailExecutable, arguments: ["-s", "\(size)", "--no-rotate", inputFile.string, "-o", filePathWildcard.string]) { _ in }
+        let thumbnailExecutionResult = try await run(
+            thumbnailExecutable,
+            arguments: ["-s", "\(size)", "--no-rotate", inputFile.string, "-o", filePathWildcard.string]
+        ) { _ in }
         switch thumbnailExecutionResult.terminationStatus {
         case .exited(0):
             break
