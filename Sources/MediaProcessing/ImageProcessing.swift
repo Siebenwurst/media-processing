@@ -16,57 +16,89 @@ public struct ImageProcessor: Sendable {
         self.executablePath = executablePath
     }
 
-    public func compressImage(inputFile: _FilePath, size: Int, format: String? = nil) async throws -> (FilePath, width: Int, height: Int) {
-        let (filePath, filePathWildcard) = makePaths(for: inputFile, format: format)
+    public typealias CompressionResult = (path: FilePath, width: Int, height: Int)
 
-        let thumbnailExecutable: Executable
-        if let executablePath {
-            thumbnailExecutable = .path(executablePath.appending("vipsthumbnail"))
-        } else {
-            thumbnailExecutable = .name("vipsthumbnail")
-        }
-        let thumbnailExecutionResult = try await run(
-            thumbnailExecutable,
-            arguments: ["-s", "\(size)", "--no-rotate", inputFile.string, "-o", filePathWildcard.string]
-        ) { _ in }
-        switch thumbnailExecutionResult.terminationStatus {
-        case .exited(0):
-            break
-        case .exited(let code), .unhandledException(let code):
-            throw ImageCompressionError.compressionFailed(code: numericCast(code))
-        }
+    public func compressImage(
+        inputFile: _FilePath,
+        size: Int,
+        format: String? = nil,
+        timeout: Duration = .seconds(30)
+    ) async throws -> CompressionResult {
+        try await withThrowingTaskGroup(of: CompressionResult?.self) { group in
+            group.addTask {
+                let (filePath, filePathWildcard) = makePaths(for: inputFile, format: format)
 
-        let headersExecutable: Executable
-        if let executablePath {
-            headersExecutable = .path(executablePath.appending("vipsheader"))
-        } else {
-            headersExecutable = .name("vipsheader")
-        }
-        let headersExecutionResult = try await run(headersExecutable, arguments: ["-a", filePath.string]) { (execution: Execution, standardOutput: AsyncBufferSequence) -> (Int?, Int?) in
-            var width: Int?
-            var height: Int?
-            for try await line in standardOutput.lines(encoding: UTF8.self) {
-                if line.starts(with: "width:") {
-                    width = parseDimension(from: line)
-                } else if line.starts(with: "height:") {
-                    height = parseDimension(from: line)
+                let thumbnailExecutable: Executable
+                if let executablePath {
+                    thumbnailExecutable = .path(executablePath.appending("vipsthumbnail"))
+                } else {
+                    thumbnailExecutable = .name("vipsthumbnail")
                 }
+                let thumbnailExecutionResult = try await run(
+                    thumbnailExecutable,
+                    arguments: ["-s", "\(size)", "--no-rotate", inputFile.string, "-o", filePathWildcard.string],
+                    output: .discarded,
+                    error: .string(limit: 1024, encoding: UTF8.self)
+                )
+                if let error = thumbnailExecutionResult.standardError {
+                    logger.debug(
+                        "Caught an error while running vipsthumbnail",
+                        metadata: ["error": .string(String(reflecting: error))]
+                    )
+                }
+                switch thumbnailExecutionResult.terminationStatus {
+                case .exited(0):
+                    break
+                case .exited(let code), .unhandledException(let code):
+                    throw ImageCompressionError.compressionFailed(code: numericCast(code))
+                }
+
+                let headersExecutable: Executable
+                if let executablePath {
+                    headersExecutable = .path(executablePath.appending("vipsheader"))
+                } else {
+                    headersExecutable = .name("vipsheader")
+                }
+                let headersExecutionResult = try await run(headersExecutable, arguments: ["-a", filePath.string]) { (execution: Execution, standardOutput: AsyncBufferSequence) -> (Int?, Int?) in
+                    var width: Int?
+                    var height: Int?
+                    for try await line in standardOutput.lines(encoding: UTF8.self) {
+                        if line.starts(with: "width:") {
+                            width = parseDimension(from: line)
+                        } else if line.starts(with: "height:") {
+                            height = parseDimension(from: line)
+                        }
+                    }
+                    return (width, height)
+                }
+
+                let width: Int
+                let height: Int
+
+                if let w = headersExecutionResult.value.0, let h = headersExecutionResult.value.1 {
+                    width = w
+                    height = h
+                } else {
+                    logger.warning("Couldn't determine image dimensions for \(filePath)")
+                    (width, height) = (0, 0)
+                }
+
+                return (.init(filePath.string), width, height)
             }
-            return (width, height)
+
+            group.addTask {
+                try await Task.sleep(for: timeout)
+                return nil
+            }
+
+            for try await value in group {
+                guard let value else { break }
+                group.cancelAll()
+                return value
+            }
+            group.cancelAll()
+            throw ImageCompressionError.timeout
         }
-
-        let width: Int
-        let height: Int
-
-        if let w = headersExecutionResult.value.0, let h = headersExecutionResult.value.1 {
-            width = w
-            height = h
-        } else {
-            logger.warning("Couldn't determine image dimensions for \(filePath)")
-            (width, height) = (0, 0)
-        }
-
-        return (.init(filePath.string), width, height)
     }
 
     public enum ThumbHashFormat {
@@ -131,7 +163,8 @@ public struct ImageProcessor: Sendable {
     }
 }
 
-enum ImageCompressionError: Error {
+enum ImageCompressionError: Error, Equatable {
+    case timeout
     case compressionFailed(code: Int)
 }
 

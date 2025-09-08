@@ -6,9 +6,9 @@ import _NIOFileSystem
 import func Foundation.getenv
 import class Foundation.Bundle
 
-@Test func resolveFilePaths() {
-    let processor = ImageProcessor()
+let processor = ImageProcessor(executablePath: env("VIPS_LOCATION").flatMap({ .init($0) }))
 
+@Test func resolveFilePaths() {
     let paths1 = processor.makePaths(for: "/var/www/assets/image.jpeg", format: nil)
     #expect(paths1.filePath == "/var/www/assets/tn_image.jpeg")
     #expect(paths1.filePathWildcard == "/var/www/assets/tn_%s.jpeg")
@@ -19,8 +19,6 @@ import class Foundation.Bundle
 }
 
 @Test func parseDimensions() {
-    let processor = ImageProcessor()
-
     let width = processor.parseDimension(from: "  width: 180   ")
     let height = processor.parseDimension(from: "   height: 180")
     #expect(width == 180)
@@ -28,8 +26,6 @@ import class Foundation.Bundle
 }
 
 @Test func thumbnailForPNG() async throws {
-    let processor = ImageProcessor(executablePath: env("VIPS_LOCATION").flatMap({ .init($0) }))
-
     let path = try #require(Bundle.module.path(forResource: "img", ofType: "png"))
     let file = try await processor.compressImage(inputFile: .init(path), size: 1024)
     #expect(file.width == 1024 || file.height == 1024)
@@ -43,6 +39,13 @@ import class Foundation.Bundle
     print("original file size:", originalInfo.size)
     print("compress file size:", compressedInfo.size)
     #expect((originalInfo.size / 2) > compressedInfo.size)
+}
+
+@Test func timeout() async throws {
+    let path = try #require(Bundle.module.path(forResource: "img", ofType: "png"))
+    await #expect(throws: ImageCompressionError.timeout, performing: {
+        _ = try await processor.compressImage(inputFile: .init(path), size: 1024, timeout: .milliseconds(10))
+    })
 }
 
 func env(_ name: String) -> String? {
