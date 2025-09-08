@@ -37,3 +37,12 @@ jobs:
 
     - name: Run tests
       run: swift test --skip-build --enable-code-coverage --parallel
+
+  test-container:
+    
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run tests in container
+      run: docker run --rm -v $PWD:/src -w /src swift:jammy bash -c "apt-get update && apt-get install -y libvips libvips-tools && swift test"
