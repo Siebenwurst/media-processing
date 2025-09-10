@@ -40,16 +40,21 @@ public struct ImageProcessor: Sendable {
                     output: .discarded,
                     error: .string(limit: 1024, encoding: UTF8.self)
                 )
-                if let error = thumbnailExecutionResult.standardError {
+                if let error = thumbnailExecutionResult.standardError, !error.isEmpty {
                     logger.debug(
                         "Caught an error while running vipsthumbnail",
-                        metadata: ["error": .string(String(reflecting: error))]
+                        metadata: [
+                            "error": .string(String(reflecting: error)),
+                            "status": .stringConvertible(thumbnailExecutionResult.terminationStatus)
+                        ]
                     )
                 }
                 switch thumbnailExecutionResult.terminationStatus {
                 case .exited(0):
+                    logger.trace("Compression executed successfully")
                     break
                 case .exited(let code), .unhandledException(let code):
+                    logger.trace("Compression executed with non-zero exit code: \(code)")
                     throw ImageCompressionError.compressionFailed(code: numericCast(code))
                 }
 
@@ -63,12 +68,15 @@ public struct ImageProcessor: Sendable {
                     var width: Int?
                     var height: Int?
                     for try await line in standardOutput.lines(encoding: UTF8.self) {
+                        logger.trace("Reading metadata line: \(line)", metadata: ["image": .string(filePath.string)])
                         if line.starts(with: "width:") {
                             width = parseDimension(from: line)
                         } else if line.starts(with: "height:") {
                             height = parseDimension(from: line)
                         }
+                        if width != nil && height != nil { break }
                     }
+                    try execution.send(signal: .terminate)
                     return (width, height)
                 }
 
@@ -79,7 +87,7 @@ public struct ImageProcessor: Sendable {
                     width = w
                     height = h
                 } else {
-                    logger.warning("Couldn't determine image dimensions for \(filePath)")
+                    logger.debug("Couldn't determine image dimensions for \(filePath)")
                     (width, height) = (0, 0)
                 }
 

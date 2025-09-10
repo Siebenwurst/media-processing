@@ -1,4 +1,5 @@
 import Testing
+import Logging
 import _NIOFileSystem
 
 @testable import MediaProcessing
@@ -6,7 +7,13 @@ import _NIOFileSystem
 import func Foundation.getenv
 import class Foundation.Bundle
 
-let processor = ImageProcessor(executablePath: env("VIPS_LOCATION").flatMap({ .init($0) }))
+let logger = {
+    var logger = Logger(label: "ImageProcessor")
+    logger.logLevel = .trace
+    return logger
+}()
+
+let processor = ImageProcessor(logger: logger, executablePath: env("VIPS_LOCATION").flatMap({ .init($0) }))
 
 @Test func resolveFilePaths() {
     let paths1 = processor.makePaths(for: "/var/www/assets/image.jpeg", format: nil)

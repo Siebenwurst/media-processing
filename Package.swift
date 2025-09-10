@@ -29,7 +29,11 @@ let package = Package(
 
         .testTarget(
             name: "MediaProcessingTests",
-            dependencies: ["MediaProcessing", .product(name: "_NIOFileSystem", package: "swift-nio"),],
+            dependencies: [
+                "MediaProcessing",
+                .product(name: "_NIOFileSystem", package: "swift-nio"),
+                .product(name: "Logging", package: "swift-log"),
+            ],
             resources: [.copy("Files/img.png")]
         ),
     ]
