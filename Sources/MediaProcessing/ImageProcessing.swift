@@ -22,6 +22,7 @@ public struct ImageProcessor: Sendable {
         inputFile: _FilePath,
         size: Int,
         format: String? = nil,
+        returnWithSize: Bool = true,
         timeout: Duration = .seconds(30)
     ) async throws -> CompressionResult {
         try await withThrowingTaskGroup(of: CompressionResult?.self) { group in
@@ -57,6 +58,8 @@ public struct ImageProcessor: Sendable {
                     logger.trace("Compression executed with non-zero exit code: \(code)")
                     throw ImageCompressionError.compressionFailed(code: numericCast(code))
                 }
+
+                guard returnWithSize else { return (.init(filePath.string), 0, 0) }
 
                 let headersExecutable: Executable
                 if let executablePath {

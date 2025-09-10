@@ -48,6 +48,22 @@ let processor = ImageProcessor(logger: logger, executablePath: env("VIPS_LOCATIO
     #expect((originalInfo.size / 2) > compressedInfo.size)
 }
 
+@Test func thumbnailForPNGWithoutReturningSize() async throws {
+    let path = try #require(Bundle.module.path(forResource: "img", ofType: "png"))
+    let file = try await processor.compressImage(inputFile: .init(path), size: 1024, returnWithSize: false)
+    #expect(file.width == 0 && file.height == 0)
+    let originalInfo = try await FileSystem.shared.info(forFileAt: .init(path))
+    let compressedInfo = try await FileSystem.shared.info(forFileAt: file.0)
+
+    guard let originalInfo, let compressedInfo else {
+        throw TestingError("Failed to get file info")
+    }
+
+    print("original file size:", originalInfo.size)
+    print("compress file size:", compressedInfo.size)
+    #expect((originalInfo.size / 2) > compressedInfo.size)
+}
+
 @Test func timeout() async throws {
     let path = try #require(Bundle.module.path(forResource: "img", ofType: "png"))
     await #expect(throws: ImageCompressionError.timeout, performing: {
