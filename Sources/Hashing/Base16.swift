@@ -130,29 +130,10 @@ extension Base16 {
     public static func encode<BigEndian, Digits>(storing words: BigEndian, with _: Digits.Type) -> String where Digits: BaseDigits {
         let bytes: Int = 2 * MemoryLayout<BigEndian>.size
 
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 14.0, *) {
-            return .init(unsafeUninitializedCapacity: bytes) {
-                Self.encode(storing: words, into: UnsafeMutableRawBufferPointer.init($0), with: Digits.self)
-                return bytes
-            }
-        }
-#endif
-
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-        return .init(
-            decoding: [UInt8].init(unsafeUninitializedCapacity: bytes) {
-                Self.encode(storing: words, into: UnsafeMutableRawBufferPointer.init($0), with: Digits.self)
-                $1 = bytes
-            },
-            as: Unicode.UTF8.self
-        )
-#else
         return .init(unsafeUninitializedCapacity: bytes) {
             Self.encode(storing: words, into: UnsafeMutableRawBufferPointer.init($0), with: Digits.self)
             return bytes
         }
-#endif
     }
 }
 

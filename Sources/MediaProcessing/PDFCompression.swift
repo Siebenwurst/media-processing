@@ -36,11 +36,11 @@ public func compressPDF(
         "-dGrayImageDownsampleType=/Bicubic", "-dMonoImageDownsampleType=/Subsample",
         "-dGrayImageResolution=72", "-dColorImageResolution=72", "-dMonoImageResolution=72",
         "-sOutputFile=\(outputFile)", inputFile.string
-    ]) { _ in }
+    ], output: .discarded)
     switch result.terminationStatus {
     case .exited(.zero):
         return
-    case .exited(let code), .unhandledException(let code):
+    case .exited(let code), .signaled(let code):
         throw PDFCompressionError.compressionFailed(code: numericCast(code))
     }
 }
