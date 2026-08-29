@@ -41,11 +41,11 @@ public struct ImageProcessor: Sendable {
                     output: .discarded,
                     error: .string(limit: 1024, encoding: UTF8.self)
                 )
-                if let error = thumbnailExecutionResult.standardError, !error.isEmpty {
+                if !thumbnailExecutionResult.standardError.isEmpty {
                     logger.debug(
                         "Caught an error while running vipsthumbnail",
                         metadata: [
-                            "error": .string(String(reflecting: error)),
+                            "error": .string(String(reflecting: thumbnailExecutionResult.standardError)),
                             "status": .stringConvertible(thumbnailExecutionResult.terminationStatus)
                         ]
                     )
@@ -54,7 +54,7 @@ public struct ImageProcessor: Sendable {
                 case .exited(0):
                     logger.trace("Compression executed successfully")
                     break
-                case .exited(let code), .unhandledException(let code):
+                case .exited(let code), .signaled(let code):
                     logger.trace("Compression executed with non-zero exit code: \(code)")
                     throw ImageCompressionError.compressionFailed(code: numericCast(code))
                 }
@@ -67,10 +67,16 @@ public struct ImageProcessor: Sendable {
                 } else {
                     headersExecutable = .name("vipsheader")
                 }
-                let headersExecutionResult = try await run(headersExecutable, arguments: ["-a", filePath.string]) { (execution: Execution, standardOutput: AsyncBufferSequence) -> (Int?, Int?) in
+                let headersExecutionResult = try await run(
+                    headersExecutable,
+                    arguments: ["-a", filePath.string],
+                    input: .none,
+                    output: .sequence,
+                    error: .discarded
+                ) { execution -> (Int?, Int?) in
                     var width: Int?
                     var height: Int?
-                    for try await line in standardOutput.lines(encoding: UTF8.self) {
+                    for try await line in execution.standardOutput.strings() {
                         logger.trace("Reading metadata line: \(line)", metadata: ["image": .string(filePath.string)])
                         if line.starts(with: "width:") {
                             width = parseDimension(from: line)
@@ -86,7 +92,7 @@ public struct ImageProcessor: Sendable {
                 let width: Int
                 let height: Int
 
-                if let w = headersExecutionResult.value.0, let h = headersExecutionResult.value.1 {
+                if let w = headersExecutionResult.closureResult.0, let h = headersExecutionResult.closureResult.1 {
                     width = w
                     height = h
                 } else {
